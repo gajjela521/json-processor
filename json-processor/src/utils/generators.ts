@@ -176,6 +176,36 @@ export const generateSqlDDL = (json: unknown, tableName: string = 'my_table'): s
     return `CREATE TABLE ${tableName} (\n${columns.join(',\n')}\n);`;
 }
 
+// Mongoose Schema Generator
+export const generateMongooseSchema = (json: unknown, rootName: string = 'userSchema'): string => {
+    const traverse = (obj: any): string => {
+        if (obj === null) return "Schema.Types.Mixed";
+        if (Array.isArray(obj)) {
+            if (obj.length === 0) return "[]";
+            return `[${traverse(obj[0])}]`;
+        }
+        if (typeof obj === 'object') {
+            const fields: string[] = [];
+            Object.entries(obj).forEach(([key, value]) => {
+                // Check if key needs quotes (simple check)
+                const keyStr = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : `"${key}"`;
+                fields.push(`  ${keyStr}: ${traverse(value)}`);
+            });
+            return `{\n${fields.join(',\n')}\n}`;
+        }
+        if (typeof obj === 'string') return "String";
+        if (typeof obj === 'number') return "Number";
+        if (typeof obj === 'boolean') return "Boolean";
+        return "Schema.Types.Mixed";
+    };
+
+    const schemaDefinition = typeof json === 'object' && json !== null && !Array.isArray(json)
+        ? traverse(json)
+        : `{ value: ${traverse(json)} }`; // Fallback for non-object root
+
+    return `import mongoose, { Schema } from 'mongoose';\n\nconst ${rootName} = new Schema(${schemaDefinition});`;
+};
+
 // Helper for existing functions (kept here to ensure availability if needed, though usually defined inside)
 // const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

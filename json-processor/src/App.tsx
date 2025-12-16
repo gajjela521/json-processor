@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import ReactJson from 'react-json-view';
-import { Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode, BookOpen, ExternalLink, Database, Coffee } from 'lucide-react';
+import { Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode, BookOpen, ExternalLink, Database, Coffee, Leaf } from 'lucide-react';
 import { parseRecursive } from './utils/jsonParser';
-import { generateTypeScriptInterfaces, generateZodSchema, generateJavaPOJO, generateSqlDDL } from './utils/generators';
+import { generateTypeScriptInterfaces, generateZodSchema, generateJavaPOJO, generateSqlDDL, generateMongooseSchema } from './utils/generators';
 import clsx from 'clsx';
 
-type OutputMode = 'tree' | 'typescript' | 'zod' | 'java' | 'sql';
+type OutputMode = 'tree' | 'typescript' | 'zod' | 'java' | 'sql' | 'mongoose';
 
 const SAMPLE_JSON = {
   "userId": 12345,
@@ -65,6 +65,7 @@ function App() {
     if (outputMode === 'zod') return generateZodSchema(parsedData);
     if (outputMode === 'java') return generateJavaPOJO(parsedData);
     if (outputMode === 'sql') return generateSqlDDL(parsedData);
+    if (outputMode === 'mongoose') return generateMongooseSchema(parsedData);
     return '';
   };
 
@@ -174,6 +175,16 @@ function App() {
               <Database className="w-4 h-4" />
               SQL Schema
             </button>
+            <button
+              onClick={() => setOutputMode('mongoose')}
+              className={clsx(
+                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                outputMode === 'mongoose' ? "bg-green-500/10 text-green-300 border border-green-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              )}
+            >
+              <Leaf className="w-4 h-4" />
+              Mongoose (MongoDB)
+            </button>
           </div>
         </div>
 
@@ -282,59 +293,79 @@ function App() {
                   outputMode === 'typescript' ? <Code className="w-4 h-4" /> :
                     outputMode === 'zod' ? <FileCode className="w-4 h-4" /> :
                       outputMode === 'java' ? <Coffee className="w-4 h-4" /> :
-                        <Database className="w-4 h-4" />
+                        outputMode === 'sql' ? <Database className="w-4 h-4" /> :
+                          <Leaf className="w-4 h-4" />
                 }
                 {outputMode === 'tree' ? 'Tree Visualization' :
                   outputMode === 'typescript' ? 'TypeScript Definitions' :
                     outputMode === 'zod' ? 'Zod Validation Schema' :
                       outputMode === 'java' ? 'Java POJO (Lombok)' :
-                        'SQL Table Schema'}
+                        outputMode === 'sql' ? 'SQL Table Schema' :
+                          'Mongoose Schema (MongoDB)'}
               </h2>
             </div>
 
-            <div className={clsx(
-              "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0",
-              error
-                ? "bg-red-950/10 border-red-900/30"
-                : "bg-slate-900/50 border-slate-800"
-            )}>
-              {error ? (
-                <div className="flex items-center justify-center h-full text-red-400 gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  <span>{error}</span>
-                </div>
-              ) : parsedData ? (
-                <>
-                  {outputMode === 'tree' ? (
-                    <div className="p-4 overflow-auto h-full custom-scrollbar">
-                      <ReactJson
-                        src={parsedData as object}
-                        theme="ocean"
-                        style={{ backgroundColor: 'transparent', fontSize: '14px' }}
-                        displayDataTypes={false}
-                        displayObjectSize={true}
-                        enableClipboard={true}
-                        collapsed={false}
-                        indentWidth={4}
-                      />
-                    </div>
-                  ) : (
-                    <pre className="p-4 overflow-auto h-full text-sm font-mono text-slate-300 leading-relaxed custom-scrollbar bg-slate-900/50">
-                      {getOutputContent()}
-                    </pre>
-                  )}
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
-                    <Code2 className="w-8 h-8 opacity-50" />
+            {/* Output Pane */}
+            <div className="flex flex-col gap-3 h-full min-h-0">
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
+                  {outputMode === 'tree' ? <FileType className="w-4 h-4" /> :
+                    outputMode === 'typescript' ? <Code className="w-4 h-4" /> :
+                      outputMode === 'zod' ? <FileCode className="w-4 h-4" /> :
+                        outputMode === 'java' ? <Coffee className="w-4 h-4" /> :
+                          <Database className="w-4 h-4" />
+                  }
+                  {outputMode === 'tree' ? 'Tree Visualization' :
+                    outputMode === 'typescript' ? 'TypeScript Definitions' :
+                      outputMode === 'zod' ? 'Zod Validation Schema' :
+                        outputMode === 'java' ? 'Java POJO (Lombok)' :
+                          'SQL Table Schema'}
+                </h2>
+              </div>
+
+              <div className={clsx(
+                "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0",
+                error
+                  ? "bg-red-950/10 border-red-900/30"
+                  : "bg-slate-900/50 border-slate-800"
+              )}>
+                {error ? (
+                  <div className="flex items-center justify-center h-full text-red-400 gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    <span>{error}</span>
                   </div>
-                  <p className="text-sm">Waiting for input...</p>
-                </div>
-              )}
+                ) : parsedData ? (
+                  <>
+                    {outputMode === 'tree' ? (
+                      <div className="p-4 overflow-auto h-full custom-scrollbar">
+                        <ReactJson
+                          src={parsedData as object}
+                          theme="ocean"
+                          style={{ backgroundColor: 'transparent', fontSize: '14px' }}
+                          displayDataTypes={false}
+                          displayObjectSize={true}
+                          enableClipboard={true}
+                          collapsed={false}
+                          indentWidth={4}
+                        />
+                      </div>
+                    ) : (
+                      <pre className="p-4 overflow-auto h-full text-sm font-mono text-slate-300 leading-relaxed custom-scrollbar bg-slate-900/50">
+                        {getOutputContent()}
+                      </pre>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
+                      <Code2 className="w-8 h-8 opacity-50" />
+                    </div>
+                    <p className="text-sm">Waiting for input...</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
       </main>
     </div>
   );
