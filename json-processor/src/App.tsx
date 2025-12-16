@@ -1,14 +1,19 @@
+
 import { useState, useEffect } from 'react';
 import ReactJson from 'react-json-view';
-import { Terminal, Copy, Trash2, Code2, AlertCircle, Check } from 'lucide-react';
+import { Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode } from 'lucide-react';
 import { parseRecursive } from './utils/jsonParser';
+import { generateTypeScriptInterfaces, generateZodSchema } from './utils/generators';
 import clsx from 'clsx';
+
+type OutputMode = 'tree' | 'typescript' | 'zod';
 
 function App() {
   const [input, setInput] = useState('');
   const [parsedData, setParsedData] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [outputMode, setOutputMode] = useState<OutputMode>('tree');
 
   useEffect(() => {
     if (!input.trim()) {
@@ -22,18 +27,23 @@ function App() {
       setParsedData(result);
       setError(null);
     } catch (err) {
-      // Accessing err directly is risky if not an object, but parseRecursive catches most.
-      // If we are here, something outer failed or parseRecursive passed through a string that isn't valid JSON at top level?
-      // Actually parseRecursive returns the string if it fails to parse, so this catch block might not be hit often unless logic error.
-      // Let's assume result might remain a string if not parseable.
       console.error(err);
       setError("Invalid JSON input");
     }
   }, [input]);
 
+  const getOutputContent = () => {
+    if (!parsedData) return '';
+    if (outputMode === 'tree') return JSON.stringify(parsedData, null, 2);
+    if (outputMode === 'typescript') return generateTypeScriptInterfaces(parsedData);
+    if (outputMode === 'zod') return generateZodSchema(parsedData);
+    return '';
+  };
+
   const handleCopy = () => {
-    if (parsedData) {
-      navigator.clipboard.writeText(JSON.stringify(parsedData, null, 2));
+    const content = getOutputContent();
+    if (content) {
+      navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -54,18 +64,21 @@ function App() {
             <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
               <Code2 className="w-6 h-6 text-indigo-400" />
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-              JSON Processor
-            </h1>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                JSON Architect
+              </h1>
+              <p className="text-xs text-slate-500 hidden sm:block">Advanced Parser & Code Generator</p>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-400">
-            <span className="hidden sm:inline">Recursive Parsing & Visualization tool</span>
             <a
-              href="https://github.com"
+              href="https://github.com/gajjela521/json-processor"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-white transition-colors flex items-center gap-2"
             >
+              <Terminal className="w-4 h-4" />
               GitHub
             </a>
           </div>
@@ -80,7 +93,7 @@ function App() {
           <div className="flex items-center justify-between px-1">
             <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
               <Terminal className="w-4 h-4" />
-              Input JSON / String
+              Input Payload
             </h2>
             <button
               onClick={handleClear}
@@ -95,7 +108,7 @@ function App() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder='Paste your mixed/stringified JSON here... e.g. "{\"key\": \"value\"}"'
+              placeholder='Paste your JSON here (supports nested stringified JSON)...'
               className="w-full h-full bg-slate-900/50 border border-slate-800 rounded-xl p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-slate-600"
               spellCheck={false}
             />
@@ -107,10 +120,39 @@ function App() {
         {/* Output Pane */}
         <div className="flex flex-col gap-3 h-full min-h-[400px]">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
-              <Code2 className="w-4 h-4" />
-              Structured Output
-            </h2>
+            <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
+              <button
+                onClick={() => setOutputMode('tree')}
+                className={clsx(
+                  "px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all",
+                  outputMode === 'tree' ? "bg-indigo-500/20 text-indigo-300 shadow-sm" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                <FileType className="w-3.5 h-3.5" />
+                Tree View
+              </button>
+              <button
+                onClick={() => setOutputMode('typescript')}
+                className={clsx(
+                  "px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all",
+                  outputMode === 'typescript' ? "bg-blue-500/20 text-blue-300 shadow-sm" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                <Code className="w-3.5 h-3.5" />
+                TypeScript
+              </button>
+              <button
+                onClick={() => setOutputMode('zod')}
+                className={clsx(
+                  "px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-all",
+                  outputMode === 'zod' ? "bg-amber-500/20 text-amber-300 shadow-sm" : "text-slate-500 hover:text-slate-300"
+                )}
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                Zod Schema
+              </button>
+            </div>
+
             <button
               onClick={handleCopy}
               disabled={!parsedData}
@@ -122,15 +164,15 @@ function App() {
               )}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied!' : 'Copy JSON'}
+              {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
 
           <div className={clsx(
-            "flex-1 rounded-xl border p-4 overflow-auto transition-all relative",
+            "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col",
             error
               ? "bg-red-950/10 border-red-900/30"
-              : "bg-slate-900/50 border-slate-800 hover:border-slate-700"
+              : "bg-slate-900/50 border-slate-800"
           )}>
             {error ? (
               <div className="flex items-center justify-center h-full text-red-400 gap-2">
@@ -138,16 +180,26 @@ function App() {
                 <span>{error}</span>
               </div>
             ) : parsedData ? (
-              <ReactJson
-                src={parsedData as object}
-                theme="ocean"
-                style={{ backgroundColor: 'transparent', fontSize: '14px' }}
-                displayDataTypes={false}
-                displayObjectSize={true}
-                enableClipboard={true}
-                collapsed={false}
-                indentWidth={4}
-              />
+              <>
+                {outputMode === 'tree' ? (
+                  <div className="p-4 overflow-auto h-full">
+                    <ReactJson
+                      src={parsedData as object}
+                      theme="ocean"
+                      style={{ backgroundColor: 'transparent', fontSize: '14px' }}
+                      displayDataTypes={false}
+                      displayObjectSize={true}
+                      enableClipboard={true}
+                      collapsed={false}
+                      indentWidth={4}
+                    />
+                  </div>
+                ) : (
+                  <pre className="p-4 overflow-auto h-full text-sm font-mono text-slate-300 leading-relaxed custom-scrollbar">
+                    {getOutputContent()}
+                  </pre>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4">
                 <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
