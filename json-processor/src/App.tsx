@@ -8,6 +8,32 @@ import clsx from 'clsx';
 
 type OutputMode = 'tree' | 'typescript' | 'zod' | 'java' | 'sql';
 
+const SAMPLE_JSON = {
+  "userId": 12345,
+  "username": "jdoe_dev",
+  "isActive": true,
+  "roles": ["admin", "editor"],
+  "profile": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "age": 32,
+    "contact": {
+      "email": "john.doe@example.com",
+      "phone": "+1-555-0123"
+    }
+  },
+  "preferences": {
+    "theme": "dark",
+    "notifications": true,
+    "newsletter_opt_in": false
+  },
+  "lastLogin": "2024-03-15T10:30:00Z",
+  "loginHistory": [
+    { "ip": "192.168.1.1", "device": "MacBook Pro" },
+    { "ip": "10.0.0.1", "device": "iPhone 15" }
+  ]
+};
+
 function App() {
   const [input, setInput] = useState('');
   const [parsedData, setParsedData] = useState<unknown>(null);
@@ -55,6 +81,10 @@ function App() {
     setInput('');
     setParsedData(null);
     setError(null);
+  };
+
+  const handleSample = () => {
+    setInput(JSON.stringify(SAMPLE_JSON, null, 2));
   };
 
   return (
@@ -223,6 +253,13 @@ function App() {
                 <Terminal className="w-4 h-4" />
                 Input Payload
               </h2>
+              <button
+                onClick={handleSample}
+                className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/20 bg-indigo-500/10"
+              >
+                <Code className="w-3.5 h-3.5" />
+                Load Sample
+              </button>
             </div>
 
             <div className="relative flex-1 group min-h-0">
