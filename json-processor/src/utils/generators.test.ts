@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { generateTypeScriptInterfaces, generateZodSchema, generateJavaPOJO, generateSqlDDL } from './generators';
-import { parseRecursive } from './jsonParser';
 
 describe('Generators', () => {
     const sampleJson = {
