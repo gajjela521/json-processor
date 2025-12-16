@@ -52,10 +52,4 @@ export const parseRecursive = (input: unknown): unknown => {
     }
 };
 
-export const formatJson = (data: unknown): string => {
-    try {
-        return JSON.stringify(data, null, 2);
-    } catch (e) {
-        return String(data);
-    }
-}
+
