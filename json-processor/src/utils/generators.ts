@@ -1,3 +1,5 @@
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 export const generateTypeScriptInterfaces = (json: unknown, rootName: string = 'Root'): string => {
     const interfaces: string[] = [];
     const startName = rootName;
@@ -80,4 +82,100 @@ export const generateZodSchema = (json: unknown, rootName: string = 'schema'): s
     return result;
 }
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+// Java POJO Generator
+export const generateJavaPOJO = (json: unknown, rootClassName: string = 'Root'): string => {
+    const classes: string[] = [];
+
+    const getJavaType = (value: unknown): string => {
+        if (value === null) return 'Object';
+        if (typeof value === 'string') return 'String';
+        if (typeof value === 'number') return Number.isInteger(value) ? 'Integer' : 'Double';
+        if (typeof value === 'boolean') return 'Boolean';
+        if (Array.isArray(value)) {
+            if (value.length === 0) return 'List<Object>';
+            return `List<${getJavaType(value[0])}>`;
+        }
+        return 'Object'; // Fallback
+    };
+
+    const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+    const traverse = (obj: any, className: string) => {
+        if (typeof obj !== 'object' || obj === null) return;
+
+        // Handle Arrays (assume homogenous objects for class generation)
+        if (Array.isArray(obj)) {
+            if (obj.length > 0 && typeof obj[0] === 'object') {
+                traverse(obj[0], className); // Generate class for array items
+            }
+            return;
+        }
+
+        const fields: string[] = [];
+
+        Object.entries(obj).forEach(([key, value]) => {
+            const fieldName = key;
+            let fieldType = 'Object';
+
+            if (value === null) {
+                fieldType = 'Object';
+            } else if (Array.isArray(value)) {
+                if (value.length > 0 && typeof value[0] === 'object') {
+                    const nestedClassName = capitalize(key) + 'Item';
+                    fieldType = `List<${nestedClassName}>`;
+                    traverse(value[0], nestedClassName);
+                } else {
+                    fieldType = `List<${getJavaType(value[0])}>`;
+                }
+            } else if (typeof value === 'object') {
+                const nestedClassName = capitalize(key);
+                fieldType = nestedClassName;
+                traverse(value, nestedClassName);
+            } else {
+                fieldType = getJavaType(value);
+            }
+
+            fields.push(`    @JsonProperty("${key}")\n    private ${fieldType} ${fieldName};`);
+        });
+
+        classes.push(
+            `@Data
+public class ${className} {
+${fields.join('\n\n')}
+}`
+        );
+    };
+
+    traverse(json, rootClassName);
+    return `import com.fasterxml.jackson.annotation.JsonProperty;\nimport lombok.Data;\nimport java.util.List;\n\n` + classes.reverse().join('\n\n');
+};
+
+// SQL DDL Generator
+export const generateSqlDDL = (json: unknown, tableName: string = 'my_table'): string => {
+    if (typeof json !== 'object' || json === null || Array.isArray(json)) {
+        return '-- Input must be a JSON object to generate a table schema';
+    }
+
+    const columns: string[] = [];
+
+    Object.entries(json).forEach(([key, value]) => {
+        let sqlType = 'TEXT';
+        if (typeof value === 'number') {
+            sqlType = Number.isInteger(value) ? 'INTEGER' : 'DECIMAL';
+        } else if (typeof value === 'boolean') {
+            sqlType = 'BOOLEAN';
+        } else if (typeof value === 'object' && value !== null) {
+            sqlType = 'JSONB'; // Defaulting to Postgres JSONB for complex objects
+        }
+
+        // Basic normalization of column name
+        const colName = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        columns.push(`    ${colName} ${sqlType}`);
+    });
+
+    return `CREATE TABLE ${tableName} (\n${columns.join(',\n')}\n);`;
+}
+
+// Helper for existing functions (kept here to ensure availability if needed, though usually defined inside)
+// const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+

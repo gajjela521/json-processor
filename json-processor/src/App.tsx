@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import ReactJson from 'react-json-view';
-import { Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode, BookOpen, ExternalLink } from 'lucide-react';
+import { Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode, BookOpen, ExternalLink, Database, Coffee } from 'lucide-react';
 import { parseRecursive } from './utils/jsonParser';
-import { generateTypeScriptInterfaces, generateZodSchema } from './utils/generators';
+import { generateTypeScriptInterfaces, generateZodSchema, generateJavaPOJO, generateSqlDDL } from './utils/generators';
 import clsx from 'clsx';
 
-type OutputMode = 'tree' | 'typescript' | 'zod';
+type OutputMode = 'tree' | 'typescript' | 'zod' | 'java' | 'sql';
 
 function App() {
   const [input, setInput] = useState('');
@@ -37,6 +37,8 @@ function App() {
     if (outputMode === 'tree') return JSON.stringify(parsedData, null, 2);
     if (outputMode === 'typescript') return generateTypeScriptInterfaces(parsedData);
     if (outputMode === 'zod') return generateZodSchema(parsedData);
+    if (outputMode === 'java') return generateJavaPOJO(parsedData);
+    if (outputMode === 'sql') return generateSqlDDL(parsedData);
     return '';
   };
 
@@ -75,7 +77,7 @@ function App() {
         </div>
 
         {/* Navigation / Main Actions */}
-        <div className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <div className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           <button
             onClick={handleClear}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800/50 transition-all group"
@@ -87,7 +89,7 @@ function App() {
           <div className="my-4 border-t border-slate-800/50" />
 
           <div className="space-y-1">
-            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Output Mode</p>
+            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Analysis & Viz</p>
             <button
               onClick={() => setOutputMode('tree')}
               className={clsx(
@@ -98,6 +100,10 @@ function App() {
               <FileType className="w-4 h-4" />
               Tree View
             </button>
+          </div>
+
+          <div className="mt-6 space-y-1">
+            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Code Generation</p>
             <button
               onClick={() => setOutputMode('typescript')}
               className={clsx(
@@ -117,6 +123,26 @@ function App() {
             >
               <FileCode className="w-4 h-4" />
               Zod Schema
+            </button>
+            <button
+              onClick={() => setOutputMode('java')}
+              className={clsx(
+                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                outputMode === 'java' ? "bg-red-500/10 text-red-300 border border-red-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              )}
+            >
+              <Coffee className="w-4 h-4" />
+              Java (Jackson)
+            </button>
+            <button
+              onClick={() => setOutputMode('sql')}
+              className={clsx(
+                "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                outputMode === 'sql' ? "bg-cyan-500/10 text-cyan-300 border border-cyan-500/20" : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+              )}
+            >
+              <Database className="w-4 h-4" />
+              SQL Schema
             </button>
           </div>
         </div>
@@ -215,8 +241,17 @@ function App() {
           <div className="flex flex-col gap-3 h-full min-h-0">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
-                {outputMode === 'tree' ? <FileType className="w-4 h-4" /> : outputMode === 'typescript' ? <Code className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
-                {outputMode === 'tree' ? 'Tree Visualization' : outputMode === 'typescript' ? 'TypeScript Definitions' : 'Zod Validation Schema'}
+                {outputMode === 'tree' ? <FileType className="w-4 h-4" /> :
+                  outputMode === 'typescript' ? <Code className="w-4 h-4" /> :
+                    outputMode === 'zod' ? <FileCode className="w-4 h-4" /> :
+                      outputMode === 'java' ? <Coffee className="w-4 h-4" /> :
+                        <Database className="w-4 h-4" />
+                }
+                {outputMode === 'tree' ? 'Tree Visualization' :
+                  outputMode === 'typescript' ? 'TypeScript Definitions' :
+                    outputMode === 'zod' ? 'Zod Validation Schema' :
+                      outputMode === 'java' ? 'Java POJO (Lombok)' :
+                        'SQL Table Schema'}
               </h2>
             </div>
 
