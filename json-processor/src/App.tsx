@@ -173,7 +173,7 @@ function App() {
         {/* Header - Simplified */}
         <header className="px-6 h-16 flex items-center justify-between border-b border-slate-800 bg-slate-900/30">
           <h2 className="text-sm font-semibold text-slate-400">Workspace</h2>
-          {parsedData && (
+          {!!parsedData && (
             <button
               onClick={handleCopy}
               className={clsx(
