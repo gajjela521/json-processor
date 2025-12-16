@@ -305,67 +305,49 @@ function App() {
               </h2>
             </div>
 
-            {/* Output Pane */}
-            <div className="flex flex-col gap-3 h-full min-h-0">
-              <div className="flex items-center justify-between px-1">
-                <h2 className="text-sm font-semibold text-slate-400 flex items-center gap-2">
-                  {outputMode === 'tree' ? <FileType className="w-4 h-4" /> :
-                    outputMode === 'typescript' ? <Code className="w-4 h-4" /> :
-                      outputMode === 'zod' ? <FileCode className="w-4 h-4" /> :
-                        outputMode === 'java' ? <Coffee className="w-4 h-4" /> :
-                          <Database className="w-4 h-4" />
-                  }
-                  {outputMode === 'tree' ? 'Tree Visualization' :
-                    outputMode === 'typescript' ? 'TypeScript Definitions' :
-                      outputMode === 'zod' ? 'Zod Validation Schema' :
-                        outputMode === 'java' ? 'Java POJO (Lombok)' :
-                          'SQL Table Schema'}
-                </h2>
-              </div>
-
-              <div className={clsx(
-                "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0",
-                error
-                  ? "bg-red-950/10 border-red-900/30"
-                  : "bg-slate-900/50 border-slate-800"
-              )}>
-                {error ? (
-                  <div className="flex items-center justify-center h-full text-red-400 gap-2">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{error}</span>
-                  </div>
-                ) : parsedData ? (
-                  <>
-                    {outputMode === 'tree' ? (
-                      <div className="p-4 overflow-auto h-full custom-scrollbar">
-                        <ReactJson
-                          src={parsedData as object}
-                          theme="ocean"
-                          style={{ backgroundColor: 'transparent', fontSize: '14px' }}
-                          displayDataTypes={false}
-                          displayObjectSize={true}
-                          enableClipboard={true}
-                          collapsed={false}
-                          indentWidth={4}
-                        />
-                      </div>
-                    ) : (
-                      <pre className="p-4 overflow-auto h-full text-sm font-mono text-slate-300 leading-relaxed custom-scrollbar bg-slate-900/50">
-                        {getOutputContent()}
-                      </pre>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
-                      <Code2 className="w-8 h-8 opacity-50" />
+            <div className={clsx(
+              "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0",
+              error
+                ? "bg-red-950/10 border-red-900/30"
+                : "bg-slate-900/50 border-slate-800"
+            )}>
+              {error ? (
+                <div className="flex items-center justify-center h-full text-red-400 gap-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <span>{error}</span>
+                </div>
+              ) : parsedData ? (
+                <>
+                  {outputMode === 'tree' ? (
+                    <div className="p-4 overflow-auto h-full custom-scrollbar">
+                      <ReactJson
+                        src={parsedData as object}
+                        theme="ocean"
+                        style={{ backgroundColor: 'transparent', fontSize: '14px' }}
+                        displayDataTypes={false}
+                        displayObjectSize={true}
+                        enableClipboard={true}
+                        collapsed={false}
+                        indentWidth={4}
+                      />
                     </div>
-                    <p className="text-sm">Waiting for input...</p>
+                  ) : (
+                    <pre className="p-4 overflow-auto h-full text-sm font-mono text-slate-300 leading-relaxed custom-scrollbar bg-slate-900/50">
+                      {getOutputContent()}
+                    </pre>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
+                    <Code2 className="w-8 h-8 opacity-50" />
                   </div>
-                )}
-              </div>
+                  <p className="text-sm">Waiting for input...</p>
+                </div>
+              )}
             </div>
           </div>
+        </div>
       </main>
     </div>
   );
