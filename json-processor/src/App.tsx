@@ -349,17 +349,25 @@ function App() {
           <div className="flex items-center gap-4 flex-1">
             {outputMode === 'api' ? (
               <div className="flex items-center gap-2 w-full max-w-3xl">
-                <select
-                  value={apiMethod}
-                  onChange={(e) => setApiMethod(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option>GET</option>
-                  <option>POST</option>
-                  <option>PUT</option>
-                  <option>DELETE</option>
-                  <option>PATCH</option>
-                </select>
+                <div className="relative">
+                  <input
+                    list="http-methods"
+                    type="text"
+                    value={apiMethod}
+                    onChange={(e) => setApiMethod(e.target.value.toUpperCase())}
+                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-24 uppercase placeholder-indigo-400/50"
+                    placeholder="GET"
+                  />
+                  <datalist id="http-methods">
+                    <option value="GET" />
+                    <option value="POST" />
+                    <option value="PUT" />
+                    <option value="DELETE" />
+                    <option value="PATCH" />
+                    <option value="HEAD" />
+                    <option value="OPTIONS" />
+                  </datalist>
+                </div>
                 <input
                   type="text"
                   value={apiUrl}
