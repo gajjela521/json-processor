@@ -295,6 +295,7 @@ function App() {
             </div>
           </div>
           <p className="text-xs text-slate-500 mt-2">Dev & Data Toolkit</p>
+          <p className="text-[10px] text-slate-600 mt-1 font-mono tracking-widest opacity-60">by GST</p>
         </div>
 
         <div className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
