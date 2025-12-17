@@ -5,7 +5,7 @@ import 'react-json-view-lite/dist/index.css';
 import {
   Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode,
   Database, Coffee, Leaf, Diff, FileText, Table, Minimize2, Maximize2,
-  Search, Shield, Wand2
+  Search, Shield, Wand2, Globe, Play, Clock, Wifi, AlertTriangle
 } from 'lucide-react';
 import { smartParse, type ParseResult } from './utils/smartParser';
 import { toYaml, toXml, toCsv } from './utils/converters';
@@ -15,6 +15,7 @@ import { decodeJwt, isPossiblyJwt, type JwtDetails } from './utils/jwtDebugger';
 import { generateMockData, SAMPLE_TEMPLATE } from './utils/mockGenerator';
 import { runTransformer } from './utils/transformer';
 import { toBase64, fromBase64, urlEncode, urlDecode, escapeJson, unescapeJson } from './utils/stringUtils';
+import { executeRequest, type ApiResponse } from './utils/apiClient';
 import clsx from 'clsx';
 import * as DiffUtil from 'diff';
 
@@ -26,7 +27,7 @@ type OutputMode =
   // Generators
   'typescript' | 'zod' | 'java' | 'sql' | 'mongoose' |
   // Tools
-  'query' | 'jwt' | 'mock' | 'transform' | 'utils';
+  'query' | 'jwt' | 'mock' | 'transform' | 'utils' | 'api';
 
 const SAMPLE_JSON = {
   "userId": 12345,
@@ -55,12 +56,19 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [outputMode, setOutputMode] = useState<OutputMode>('tree');
-  const [inputTab, setInputTab] = useState<'primary' | 'secondary'>('primary');
+  const [inputTab, setInputTab] = useState<'primary' | 'secondary' | 'headers' | 'params'>('primary');
 
   // Tool Specific States
   const [jqQuery, setJqQuery] = useState('');
   const [mockCount, setMockCount] = useState(5);
   const [jwtData, setJwtData] = useState<JwtDetails | null>(null);
+
+  // API Client State
+  const [apiMethod, setApiMethod] = useState('GET');
+  const [apiUrl, setApiUrl] = useState('');
+  const [apiHeaders, setApiHeaders] = useState('{\n  "Content-Type": "application/json"\n}');
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
+  const [apiLoading, setApiLoading] = useState(false);
 
   // Auto-detect JWT
   useEffect(() => {
@@ -77,9 +85,8 @@ function App() {
 
   // Main Parser Effect
   useEffect(() => {
-    if (outputMode === 'mock') {
-      // Mock mode doesn't parse input as JSON data per se, it parses input as Template
-      // We handle logic in render or separate effect
+    if (outputMode === 'mock' || outputMode === 'api') {
+      // Mock and API modes handle input differently (or ignore it for API response view)
       setError(null);
       return;
     }
@@ -148,7 +155,8 @@ function App() {
     // Special Handling
     if (outputMode === 'diff') return '';
     if (outputMode === 'jwt') return '';
-    if (outputMode === 'utils') return ''; // Handled in render
+    if (outputMode === 'utils') return '';
+    if (outputMode === 'api') return ''; // Handled in render
 
     // Viz tools that render components, handled in render:
     if (outputMode === 'tree') return JSON.stringify(parsedData, null, 2);
@@ -182,12 +190,45 @@ function App() {
     }
   };
 
+  const handleApiCopyLogs = () => {
+    if (apiResponse?.error) {
+      navigator.clipboard.writeText(apiResponse.error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
   const handleClear = () => {
     setInput('');
     setSecondInput('');
     setParsedData(null);
     setError(null);
     setJqQuery('');
+    setApiResponse(null);
+  };
+
+  // Execute API Request
+  const handleApiSend = async () => {
+    if (!apiUrl) return;
+    setApiLoading(true);
+    setApiResponse(null);
+
+    let parsedHeaders = {};
+    try {
+      parsedHeaders = JSON.parse(apiHeaders);
+    } catch {
+      // ignore invalid headers
+    }
+
+    const res = await executeRequest({
+      method: apiMethod,
+      url: apiUrl,
+      headers: parsedHeaders,
+      body: input // Use main input as body
+    });
+
+    setApiResponse(res);
+    setApiLoading(false);
   };
 
   const handleSample = () => {
@@ -196,13 +237,17 @@ function App() {
       return;
     }
     if (outputMode === 'jwt') {
-      // Sample standard HS256 token
       setInput('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c');
       return;
     }
     if (outputMode === 'transform') {
       setInput(JSON.stringify(SAMPLE_JSON, null, 2));
       setSecondInput('// Return list of roles\nreturn data.roles;');
+      return;
+    }
+    if (outputMode === 'api') {
+      setApiUrl('https://jsonplaceholder.typicode.com/posts/1');
+      setApiMethod('GET');
       return;
     }
 
@@ -214,16 +259,17 @@ function App() {
   };
 
   const handleFormat = (type: 'minify' | 'prettify') => {
-    if (!parsedData && outputMode !== 'mock') return;
-    // For Mock, we format the template input
-    const target = outputMode === 'mock' ? input : JSON.stringify(parsedData);
+    if (!parsedData && outputMode !== 'mock' && outputMode !== 'api') return;
+
+    const target = outputMode === 'mock' || outputMode === 'api' ? input : JSON.stringify(parsedData);
 
     try {
       const obj = typeof target === 'string' ? JSON.parse(target) : target;
       const formatted = type === 'minify' ? JSON.stringify(obj) : JSON.stringify(obj, null, 2);
 
       if (inputTab === 'primary') setInput(formatted);
-      else setSecondInput(formatted);
+      else if (inputTab === 'secondary') setSecondInput(formatted);
+      else if (inputTab === 'headers') setApiHeaders(formatted);
     } catch { }
   };
 
@@ -253,6 +299,12 @@ function App() {
             <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
             Clear Workspace
           </button>
+
+          {/* Section: API Client */}
+          <div className="space-y-1">
+            <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Network</p>
+            <SidebarBtn active={outputMode === 'api'} onClick={() => { setOutputMode('api'); setInputTab('primary'); }} icon={Globe} label="API Client" />
+          </div>
 
           {/* Section: Analysis */}
           <div className="space-y-1">
@@ -294,27 +346,64 @@ function App() {
       <main className="flex-1 min-w-0 h-screen flex flex-col">
         {/* Header */}
         <header className="px-6 h-16 flex items-center justify-between border-b border-slate-800 bg-slate-900/30 flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <h2 className="text-sm font-semibold text-slate-400">
-              {outputMode === 'jwt' ? 'JWT Debugger' :
-                outputMode === 'mock' ? 'Mock Data Generator' :
-                  outputMode === 'transform' ? 'Live JS Transformer' :
-                    'Workspace'}
-            </h2>
-            {outputMode === 'jwt' && jwtData ? (
-              <span className={clsx("px-2 py-0.5 rounded-full text-[10px] font-mono border", jwtData.isValid ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20")}>
-                {jwtData.isValid ? 'Valid Token Format' : 'Invalid Token'}
-              </span>
-            ) : (parseResult && parseResult.format !== 'unknown' && outputMode !== 'mock' && outputMode !== 'utils') && (
-              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-700">
-                Detected: {parseResult.format.toUpperCase()}
-              </span>
+          <div className="flex items-center gap-4 flex-1">
+            {outputMode === 'api' ? (
+              <div className="flex items-center gap-2 w-full max-w-3xl">
+                <select
+                  value={apiMethod}
+                  onChange={(e) => setApiMethod(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option>GET</option>
+                  <option>POST</option>
+                  <option>PUT</option>
+                  <option>DELETE</option>
+                  <option>PATCH</option>
+                </select>
+                <input
+                  type="text"
+                  value={apiUrl}
+                  onChange={(e) => setApiUrl(e.target.value)}
+                  placeholder="Enter request URL (e.g. https://api.example.com/data)"
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={handleApiSend}
+                  disabled={apiLoading || !apiUrl}
+                  className={clsx(
+                    "flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-sm transition-all text-white shadow-lg shadow-indigo-500/20",
+                    apiLoading ? "bg-slate-700 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-500 hover:scale-105 active:scale-95"
+                  )}
+                >
+                  {apiLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                  Send
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-sm font-semibold text-slate-400">
+                  {outputMode === 'jwt' ? 'JWT Debugger' :
+                    outputMode === 'mock' ? 'Mock Data Generator' :
+                      outputMode === 'transform' ? 'Live JS Transformer' :
+                        'Workspace'}
+                </h2>
+                {(outputMode === 'jwt' && jwtData) && (
+                  <span className={clsx("px-2 py-0.5 rounded-full text-[10px] font-mono border", jwtData.isValid ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20")}>
+                    {jwtData.isValid ? 'Valid Token Format' : 'Invalid Token'}
+                  </span>
+                )}
+                {(parseResult && parseResult.format !== 'unknown' && outputMode !== 'mock' && outputMode !== 'utils') && (
+                  <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-700">
+                    Detected: {parseResult.format.toUpperCase()}
+                  </span>
+                )}
+              </>
             )}
           </div>
 
           <div className="flex items-center gap-2">
             {/* Context Actions */}
-            {(!!parsedData || outputMode === 'mock') && (
+            {(!!parsedData || outputMode === 'mock' || outputMode === 'api') && (
               <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-800 mr-2">
                 <button onClick={() => handleFormat('minify')} className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-indigo-400" title="Minify Input">
                   <Minimize2 className="w-4 h-4" />
@@ -326,7 +415,7 @@ function App() {
             )}
             {/* Copy Button */}
             <button
-              onClick={handleCopy}
+              onClick={outputMode === 'api' && apiResponse?.error ? handleApiCopyLogs : handleCopy}
               className={clsx(
                 "text-xs flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 border",
                 copied
@@ -335,7 +424,7 @@ function App() {
               )}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? 'Copied' : 'Copy Output'}
+              {copied ? 'Copied' : (outputMode === 'api' && apiResponse?.error ? 'Copy Logs' : 'Copy Output')}
             </button>
           </div>
         </header>
@@ -352,7 +441,8 @@ function App() {
                   {outputMode === 'mock' ? 'Data Template' :
                     outputMode === 'utils' ? 'Input String' :
                       outputMode === 'jwt' ? 'Encoded Token' :
-                        'Input Payload'}
+                        outputMode === 'api' ? 'Request Body' :
+                          'Input Payload'}
                 </h2>
 
                 {/* Diff & Transformer Tabs */}
@@ -372,6 +462,24 @@ function App() {
                     </button>
                   </div>
                 )}
+
+                {/* API Tabs */}
+                {outputMode === 'api' && (
+                  <div className="flex bg-slate-900 rounded-lg p-0.5 border border-slate-800">
+                    <button
+                      onClick={() => setInputTab('primary')}
+                      className={clsx("px-3 py-1 text-xs rounded-md transition-all", inputTab === 'primary' ? "bg-indigo-500/20 text-indigo-300" : "text-slate-500 hover:text-slate-300")}
+                    >
+                      Body
+                    </button>
+                    <button
+                      onClick={() => setInputTab('headers')}
+                      className={clsx("px-3 py-1 text-xs rounded-md transition-all", inputTab === 'headers' ? "bg-indigo-500/20 text-indigo-300" : "text-slate-500 hover:text-slate-300")}
+                    >
+                      Headers
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button onClick={handleSample} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/20 bg-indigo-500/10">
@@ -381,9 +489,20 @@ function App() {
 
             <div className="relative flex-1 group min-h-0">
               <textarea
-                value={(outputMode === 'diff' || outputMode === 'transform') && inputTab === 'secondary' ? secondInput : input}
-                onChange={(e) => (outputMode === 'diff' || outputMode === 'transform') && inputTab === 'secondary' ? setSecondInput(e.target.value) : setInput(e.target.value)}
-                placeholder={'Paste content here...'}
+                value={
+                  (outputMode === 'diff' || outputMode === 'transform') && inputTab === 'secondary' ? secondInput :
+                    outputMode === 'api' && inputTab === 'headers' ? apiHeaders :
+                      input
+                }
+                onChange={(e) => {
+                  if ((outputMode === 'diff' || outputMode === 'transform') && inputTab === 'secondary') setSecondInput(e.target.value);
+                  else if (outputMode === 'api' && inputTab === 'headers') setApiHeaders(e.target.value);
+                  else setInput(e.target.value);
+                }}
+                placeholder={
+                  outputMode === 'api' && inputTab === 'headers' ? '{"Content-Type": "application/json"}' :
+                    'Paste content here...'
+                }
                 className="w-full h-full bg-slate-900 border border-slate-800 rounded-xl p-4 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-slate-600 custom-scrollbar"
                 spellCheck={false}
               />
@@ -425,11 +544,72 @@ function App() {
               )}
             </div>
 
-            <div className={clsx("flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0", error ? "bg-red-950/10 border-red-900/30" : "bg-slate-900/50 border-slate-800")}>
-              {error ? (
+            <div className={clsx(
+              "flex-1 rounded-xl border overflow-hidden transition-all relative flex flex-col min-h-0",
+              (error && outputMode !== 'api') || (outputMode === 'api' && apiResponse?.error) ? "bg-red-950/10 border-red-900/30" : "bg-slate-900/50 border-slate-800"
+            )}>
+              {(error && outputMode !== 'api') ? (
                 <div className="flex items-center justify-center h-full text-red-400 gap-2"><AlertCircle className="w-5 h-5" /><span>{error}</span></div>
               ) : (
                 <div className="h-full overflow-auto custom-scrollbar p-0">
+                  {/* VIZ: API Response */}
+                  {outputMode === 'api' && (
+                    apiResponse ? (
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-center gap-4 px-4 py-2 border-b border-slate-800 bg-slate-900/50 text-xs text-slate-400">
+                          <div className={clsx("flex items-center gap-1.5 font-bold", apiResponse.success ? "text-emerald-400" : "text-red-400")}>
+                            <Wifi className="w-3 h-3" />
+                            {apiResponse.status} {apiResponse.statusText}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3 h-3" />
+                            {apiResponse.duration}ms
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Database className="w-3 h-3" />
+                            {apiResponse.size}
+                          </div>
+                        </div>
+
+                        {apiResponse.error ? (
+                          <div className="flex-1 p-6 text-red-400 font-mono text-sm leading-relaxed whitespace-pre-wrap">
+                            <div className="flex items-center gap-2 mb-4 text-red-300 font-bold border-b border-red-500/20 pb-2">
+                              <AlertTriangle className="w-5 h-5" />
+                              Request Failed
+                            </div>
+                            {apiResponse.error}
+
+                            <div className="mt-8 p-4 bg-red-900/10 border border-red-500/20 rounded-lg text-xs text-red-300/80">
+                              <strong>Note:</strong> If you are trying to reach a local backend (localhost), ensure that:
+                              <ul className="list-disc ml-5 mt-2 space-y-1">
+                                <li>Your backend is running.</li>
+                                <li>You have enabled <strong>CORS</strong> on your backend.</li>
+                                <li>You are using 'http' not 'https' if strictly local.</li>
+                              </ul>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 overflow-auto custom-scrollbar p-0 relative">
+                            {apiResponse.data && typeof apiResponse.data === 'object' ? (
+                              <div className="p-4">
+                                <JsonView data={apiResponse.data as object} shouldExpandNode={allExpanded} style={darkStyles} />
+                              </div>
+                            ) : (
+                              <pre className="p-4 text-sm font-mono text-slate-300">{String(apiResponse.data)}</pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4 min-h-[300px]">
+                        <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
+                          <Globe className="w-8 h-8 opacity-50" />
+                        </div>
+                        <p className="text-sm">Enter URL and hit Send</p>
+                      </div>
+                    )
+                  )}
+
                   {/* VIZ: Tree / Query / Transform / Mock */}
                   {(outputMode === 'tree' || outputMode === 'query' || outputMode === 'transform' || outputMode === 'mock') && (
                     <div className="p-4">
@@ -490,14 +670,14 @@ function App() {
                   )}
 
                   {/* Fallback Text Output */}
-                  {!['tree', 'diff', 'query', 'transform', 'mock', 'jwt', 'utils'].includes(outputMode) && (
+                  {!['tree', 'diff', 'query', 'transform', 'mock', 'jwt', 'utils', 'api'].includes(outputMode) && (
                     <pre className="p-4 text-sm font-mono text-slate-300 leading-relaxed">
                       {getOutputContent()}
                     </pre>
                   )}
 
                   {/* Empty State */}
-                  {!parsedData && outputMode !== 'mock' && outputMode !== 'utils' && !input && (
+                  {!parsedData && outputMode !== 'mock' && outputMode !== 'utils' && !input && outputMode !== 'api' && (
                     <div className="flex flex-col items-center justify-center h-full text-slate-600 gap-4 min-h-[300px]">
                       <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center border border-slate-700/50">
                         <Code2 className="w-8 h-8 opacity-50" />
