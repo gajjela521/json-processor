@@ -70,6 +70,9 @@ function App() {
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
   const [apiUseProxy, setApiUseProxy] = useState(false);
+  const [isCustomMethod, setIsCustomMethod] = useState(false);
+
+  const STANDARD_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
   // Auto-detect JWT
   useEffect(() => {
@@ -250,6 +253,7 @@ function App() {
     if (outputMode === 'api') {
       setApiUrl('https://jsonplaceholder.typicode.com/posts/1');
       setApiMethod('GET');
+      setIsCustomMethod(false);
       return;
     }
 
@@ -345,25 +349,41 @@ function App() {
           <div className="flex items-center gap-4 flex-1">
             {outputMode === 'api' ? (
               <div className="flex items-center gap-2 w-full max-w-3xl">
-                <div className="relative">
-                  <input
-                    list="http-methods"
-                    type="text"
+                {!isCustomMethod && STANDARD_METHODS.includes(apiMethod) ? (
+                  <select
                     value={apiMethod}
-                    onChange={(e) => setApiMethod(e.target.value.toUpperCase())}
-                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-24 uppercase placeholder-indigo-400/50"
-                    placeholder="GET"
-                  />
-                  <datalist id="http-methods">
-                    <option value="GET" />
-                    <option value="POST" />
-                    <option value="PUT" />
-                    <option value="DELETE" />
-                    <option value="PATCH" />
-                    <option value="HEAD" />
-                    <option value="OPTIONS" />
-                  </datalist>
-                </div>
+                    onChange={(e) => {
+                      if (e.target.value === 'CUSTOM') {
+                        setIsCustomMethod(true);
+                        setApiMethod('');
+                      } else {
+                        setApiMethod(e.target.value);
+                      }
+                    }}
+                    className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    {STANDARD_METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                    <option value="CUSTOM">Custom...</option>
+                  </select>
+                ) : (
+                  <div className="flex bg-slate-900 border border-slate-700 rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-indigo-500">
+                    <input
+                      type="text"
+                      value={apiMethod}
+                      onChange={(e) => setApiMethod(e.target.value.toUpperCase())}
+                      className="bg-transparent px-3 py-2 text-sm font-bold text-indigo-400 focus:outline-none w-24 uppercase placeholder-indigo-400/50"
+                      placeholder="METHOD"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => { setIsCustomMethod(false); setApiMethod('GET'); }}
+                      className="px-2 hover:bg-slate-800 text-slate-500 hover:text-red-400 transition-colors border-l border-slate-800"
+                      title="Reset to List"
+                    >
+                      <Minimize2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
                 <input
                   type="text"
                   value={apiUrl}
