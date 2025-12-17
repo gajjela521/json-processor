@@ -294,13 +294,7 @@ function App() {
         </div>
 
         <div className="flex-1 p-4 space-y-6 overflow-y-auto custom-scrollbar">
-          <button
-            onClick={handleClear}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-slate-800/50 transition-all group"
-          >
-            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            Clear Workspace
-          </button>
+
 
           {/* Section: API Client */}
           <div className="space-y-1">
@@ -502,9 +496,14 @@ function App() {
                 )}
               </div>
 
-              <button onClick={handleSample} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/20 bg-indigo-500/10">
-                <Code className="w-3.5 h-3.5" /> Load Sample
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={handleClear} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-red-400 transition-colors border border-slate-700/50 hover:border-red-500/20">
+                  <Trash2 className="w-3.5 h-3.5" /> Clear
+                </button>
+                <button onClick={handleSample} className="text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/20 bg-indigo-500/10">
+                  <Code className="w-3.5 h-3.5" /> Load Sample
+                </button>
+              </div>
             </div>
 
             <div className="relative flex-1 group min-h-0">
