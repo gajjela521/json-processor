@@ -69,6 +69,7 @@ function App() {
   const [apiHeaders, setApiHeaders] = useState('{\n  "Content-Type": "application/json"\n}');
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [apiLoading, setApiLoading] = useState(false);
+  const [apiUseProxy, setApiUseProxy] = useState(false);
 
   // Auto-detect JWT
   useEffect(() => {
@@ -224,7 +225,8 @@ function App() {
       method: apiMethod,
       url: apiUrl,
       headers: parsedHeaders,
-      body: input // Use main input as body
+      body: input, // Use main input as body
+      useProxy: apiUseProxy
     });
 
     setApiResponse(res);
@@ -385,6 +387,16 @@ function App() {
                 >
                   {apiLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                   Send
+                </button>
+                <button
+                  onClick={() => setApiUseProxy(!apiUseProxy)}
+                  className={clsx(
+                    "p-2 rounded-lg border transition-all text-xs font-bold uppercase",
+                    apiUseProxy ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/50" : "bg-slate-900 text-slate-500 border-slate-700 hover:text-slate-300"
+                  )}
+                  title="Enable CORS Proxy to bypass browser restrictions"
+                >
+                  {apiUseProxy ? 'Proxy On' : 'Proxy Off'}
                 </button>
               </div>
             ) : (

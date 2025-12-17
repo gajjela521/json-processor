@@ -15,6 +15,7 @@ export interface ApiRequest {
     url: string;
     headers?: Record<string, string>;
     body?: string; // Assumed stringified JSON if method is POST/PUT
+    useProxy?: boolean;
 }
 
 export const executeRequest = async (req: ApiRequest): Promise<ApiResponse> => {
@@ -34,7 +35,11 @@ export const executeRequest = async (req: ApiRequest): Promise<ApiResponse> => {
             }
         }
 
-        const response = await fetch(req.url, options);
+        const fetchUrl = req.useProxy
+            ? `https://corsproxy.io/?${encodeURIComponent(req.url)}`
+            : req.url;
+
+        const response = await fetch(fetchUrl, options);
         const end = performance.now();
         const duration = Math.round(end - start);
 
