@@ -1,0 +1,13 @@
+<app-header fixed></app-header>
+<div class="container">
+    <app-sidebar class="sidebar" fixed></app-sidebar>
+    @defer {
+        <app-main class="main"></app-main>
+    } @placeholder (minimum 1s) {
+        <p class="placeholder">Home Page loading...</p>
+    } @loading (minimum 1s; after 500ms) {
+        <p class="loading">Loading Home Page... Thanks for waiting...</p>
+    } @error {
+        <p class="error">Failed to load Home Page. Please try to reload the page.</p>
+    }
+</div>

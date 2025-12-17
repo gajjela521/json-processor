@@ -1,0 +1,37 @@
+// :header{
+//     --header-height: 50px;
+//     background-color: salmon;
+//     color: white;
+//     height: var(--header-height);
+//     display: flex;
+//     justify-content: center;
+// }
+// p{
+//     background-color: royalblue;
+//     color: white;
+//     text-align: center;
+// }
+
+:header {
+    --header-height: 60px;
+    --header-background-color: salmon;
+    --header-color: #fff;
+    --header-padding: 10px 20px;
+    --header-font-size: 1.5rem;
+
+    height: var(--header-height);
+    background-color: var(--header-background-color);
+    color: var(--header-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--header-padding);
+    font-size: var(--header-font-size);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    background-color: royalblue;
+    color: white;
+    text-align: center;
+}

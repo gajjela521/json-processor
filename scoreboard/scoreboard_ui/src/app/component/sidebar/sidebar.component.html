@@ -1,0 +1,17 @@
+<div stretch="sidebar" class="sidebar">
+    @if (isSidebarOpen) {
+        <table class="sidebar">
+            <router-outlet>
+            <nav>
+            <div > <a href="/"> Home </a> </div>   
+             
+            <div > <a href="/verify">Verify Scores </a></div>
+             
+            <div > <a href="/submit">Submit Scores</a></div>
+             
+            <div > <a href="/calculator">Calculate Scores</a></div>
+            </nav>
+        </router-outlet>
+        </table>
+    }
+</div>

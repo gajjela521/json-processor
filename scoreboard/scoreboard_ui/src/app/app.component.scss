@@ -1,0 +1,94 @@
+/* Apply box-sizing for consistent sizing */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Prevent scrolling on the body */
+    font-family: Arial, sans-serif; /* Optional: Apply a consistent font */
+}
+
+/* Header */
+app-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60px; /* Fixed height for the header */
+    background-color: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1000; /* Ensure it stays above other elements */
+}
+
+/* Container for sidebar and main content */
+.container {
+    display: flex;
+    position: absolute;
+    top: 60px; /* Start below the header */
+    left: 0;
+    width: 100%;
+    height: calc(100vh - 60px); /* Full height minus header */
+}
+
+/* Sidebar */
+app-sidebar.sidebar {
+    width: 250px; /* Fixed width for the sidebar */
+    background-color: #3f99a7;
+    padding: 10px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 60px; /* Start below the header */
+    bottom: 0;
+    left: 0;
+    overflow-y: auto; /* Optional: Allow scrolling if the sidebar content overflows */
+    color: white;
+}
+
+/* Main content */
+app-main.main {
+    margin-left: 250px; /* Offset by the sidebar's width */
+    padding: 20px;
+    width: calc(100% - 250px); /* Full width minus sidebar */
+    height: calc(100vh - 60px); /* Full height minus header */
+    overflow-y: auto; /* Allow vertical scrolling */
+    background-color: #ffffff;
+    display: block; /* Ensure the main content behaves as a block */
+}
+
+/* Optional: Media query for responsiveness */
+@media (max-width: 768px) {
+    app-sidebar.sidebar {
+        width: 200px; /* Reduce sidebar width on smaller screens */
+    }
+
+    app-main.main {
+        margin-left: 200px; /* Adjust main content margin */
+        width: calc(100% - 200px); /* Adjust width */
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        flex-direction: column; /* Stack sidebar and main content */
+    }
+
+    app-sidebar.sidebar {
+        width: 100%; /* Full width for sidebar */
+        height: 150px; /* Adjust height for smaller screens */
+        position: relative; /* Remove fixed positioning */
+    }
+
+    app-main.main {
+        margin: 0;
+        width: 100%;
+        height: calc(100vh - 150px); /* Adjust for the new sidebar height */
+    }
+}
