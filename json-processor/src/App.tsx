@@ -5,7 +5,7 @@ import 'react-json-view-lite/dist/index.css';
 import {
   Terminal, Copy, Trash2, Code2, AlertCircle, Check, FileType, Code, FileCode,
   Database, Coffee, Leaf, Diff, FileText, Table, Minimize2, Maximize2,
-  Search, Shield, Wand2, Globe, Play, Clock, Wifi, AlertTriangle
+  Search, Shield, Wand2, Globe, Play, Clock, Wifi, AlertTriangle, Construction
 } from 'lucide-react';
 import { smartParse, type ParseResult } from './utils/smartParser';
 import { toYaml, toXml, toCsv } from './utils/converters';
@@ -304,7 +304,20 @@ function App() {
           {/* Section: API Client */}
           <div className="space-y-1">
             <p className="px-4 text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">Network</p>
-            <SidebarBtn active={outputMode === 'api'} onClick={() => { setOutputMode('api'); setInputTab('primary'); }} icon={Globe} label="API Client" />
+            <SidebarBtn
+              active={outputMode === 'api'}
+              onClick={() => { setOutputMode('api'); setInputTab('primary'); }}
+              icon={Globe}
+              label={
+                <div className="flex items-center justify-between w-full">
+                  <span>API Client</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 rounded font-bold uppercase tracking-wider">Beta</span>
+                    <Construction className="w-3.5 h-3.5 text-yellow-500/80" />
+                  </div>
+                </div>
+              }
+            />
           </div>
 
           {/* Section: Analysis */}
